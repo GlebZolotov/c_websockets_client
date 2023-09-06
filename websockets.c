@@ -88,7 +88,7 @@ static struct lws_extension extensions[] = {
                     { NULL, NULL, NULL /* terminator */ }
                 };
 
-connection ws_connect(const char* host, unsigned int port, const char* path, bool is_permessage_deflate, unsigned int read_timeout) {
+connection ws_connect(const char* protocol, const char* host, unsigned int port, const char* path, bool is_permessage_deflate, unsigned int read_timeout) {
     is_connected = false;
     error_code = 0;
     payload *receive_payload = (payload *)malloc(sizeof(payload));
@@ -103,6 +103,8 @@ connection ws_connect(const char* host, unsigned int port, const char* path, boo
 	info.protocols = protocols;
     if (is_permessage_deflate) {
         info.extensions = extensions;
+    }
+    if (strcmp(protocol, "wss") == 0) {
         info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
     }
     info.user = receive_payload;
@@ -117,7 +119,7 @@ connection ws_connect(const char* host, unsigned int port, const char* path, boo
     ccinfo.host = host;
     ccinfo.origin = host;
     ccinfo.protocol = protocols[0].name;
-    if (is_permessage_deflate) {
+    if (strcmp(protocol, "wss") == 0) {
         ccinfo.ssl_connection = LCCSCF_USE_SSL;
     }
     conn.web_socket = lws_client_connect_via_info(&ccinfo);

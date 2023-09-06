@@ -15,7 +15,7 @@ typedef struct message {
     int error_code;
 } message;
 
-connection ws_connect(const char* host, unsigned int port, const char* path, bool is_permessage_deflate, unsigned int read_timeout);
+connection ws_connect(const char* protocol, const char* host, unsigned int port, const char* path, bool is_permessage_deflate, unsigned int read_timeout);
 
 void ws_send(connection conn, message msg);
 
