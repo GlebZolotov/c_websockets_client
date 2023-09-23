@@ -9,7 +9,7 @@ git clone "https://github.com/warmcat/libwebsockets.git"
 
 cd libwebsockets && mkdir build && cd build
 
-cmake .. -DCMAKE_CXX_FLAGS=-I\ $1 -DCMAKE_CXX_FLAGS=-L\ $2 -DLWS_WITHOUT_EXTENSIONS=OFF -DLWS_LINK_TESTAPPS_DYNAMIC=ON && make
+cmake .. -DZLIB_LIBRARY=$1 -DZLIB_INCLUDE_DIR=$2 -DLWS_WITHOUT_EXTENSIONS=OFF -DLWS_LINK_TESTAPPS_DYNAMIC=ON && make
 
 cd $BASEDIR && make
 
