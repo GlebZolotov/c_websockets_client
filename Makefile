@@ -1,7 +1,7 @@
 all: websockets_client.so
 
 ws.o: websockets.c libwebsockets/build/lib/libwebsockets.so
-	gcc -c -Wall $< -o $@ -Ilibwebsockets/build/include
+	gcc -c -Wall $< -o $@ -Ilibwebsockets/build/include -fPIC
 websockets_client.so: ws.o libwebsockets/build/lib/libwebsockets.so
 	gcc $^ -o $@ -Ilibwebsockets/build/include libwebsockets/build/lib/libwebsockets.so -fPIC -shared
 
