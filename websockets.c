@@ -10,9 +10,12 @@ typedef struct payload
 	unsigned char data[LWS_SEND_BUFFER_PRE_PADDING + BUFFER_SIZE + LWS_SEND_BUFFER_POST_PADDING];
     size_t len;
     bool is_write;
+    struct payload *next;
 } payload;
 
 static bool is_connected;
+static int msg_count;
+static bool recv_from_buf;
 static int error_code;
 
 static int callback( struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len )
@@ -27,6 +30,18 @@ static int callback( struct lws *wsi, enum lws_callback_reasons reason, void *us
 		case LWS_CALLBACK_CLIENT_RECEIVE:
             payload * pd = (payload *)(lws_context_user(lws_get_context(wsi)));
             if (pd->is_write) break;
+
+            int count_of_msg = msg_count;
+            while(count_of_msg > 0) {
+                if (pd->next == NULL) {
+                    pd->next = (payload *)malloc(sizeof(payload));
+                    pd->next->next = NULL;
+                    pd->next->len = 0;
+                }
+                pd = pd->next;
+                count_of_msg--;
+            }
+
             //printf("I get a message from the server with len %ld\n", len);
             lws_set_timer_usecs(wsi, -1);
             if (pd->len + len < BUFFER_SIZE) {
@@ -39,6 +54,11 @@ static int callback( struct lws *wsi, enum lws_callback_reasons reason, void *us
                 is_connected = false;
 			    return -1;
             }
+
+            if (lws_is_final_fragment(wsi)) {
+                msg_count++;
+            }
+
 			break;
 
 		case LWS_CALLBACK_CLIENT_WRITEABLE:
@@ -91,7 +111,10 @@ static struct lws_extension extensions[] = {
 connection ws_connect(const char* protocol, const char* host, unsigned int port, const char* path, bool is_permessage_deflate, unsigned int read_timeout) {
     is_connected = false;
     error_code = 0;
+    msg_count = 0;
+    recv_from_buf = false;
     payload *receive_payload = (payload *)malloc(sizeof(payload));
+    receive_payload->next = NULL;
     connection conn;
     conn.web_socket = NULL;
     conn.context = NULL;
@@ -133,7 +156,13 @@ connection ws_connect(const char* protocol, const char* host, unsigned int port,
 }
 
 void ws_close(connection conn) {
-    free((payload *)(lws_context_user(conn.context)));
+    payload * pd = lws_context_user(conn.context);
+    while(pd->next != NULL) {
+        payload * for_del = pd->next;
+        pd->next = for_del->next;
+        free(for_del);
+    }
+    free(pd);
     lws_context_destroy( conn.context );
 }
 
@@ -151,6 +180,21 @@ void ws_send(connection conn, message msg) {
 message ws_recv(connection conn) {
     payload * pd = (payload *)(lws_context_user(conn.context));
     message res;
+    if (recv_from_buf) {
+        payload * for_del = pd->next;
+        pd->next = for_del->next;
+        free(for_del);
+    }
+    if (msg_count > 0) {
+        pd = pd->next;
+        res.len = pd->len;
+        pd->data[LWS_SEND_BUFFER_PRE_PADDING + pd->len] = 0;
+        res.data = &pd->data[LWS_SEND_BUFFER_PRE_PADDING];
+        res.error_code = error_code;
+        msg_count--;
+        recv_from_buf = true;
+        return res;
+    }
     pd->is_write = false;
     pd->len = 0;
     lws_set_timer_usecs(conn.web_socket, conn.read_timeout * 1000000);
@@ -158,8 +202,11 @@ message ws_recv(connection conn) {
         lws_service( conn.context, /* timeout_ms = */ 0 );
     }
     res.len = pd->len;
+    pd->data[LWS_SEND_BUFFER_PRE_PADDING + pd->len] = 0;
     res.data = &pd->data[LWS_SEND_BUFFER_PRE_PADDING];
     res.error_code = error_code;
+    msg_count--;
+    recv_from_buf = false;
     return res;
 }
 
