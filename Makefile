@@ -19,7 +19,7 @@ ifeq ($(PREFIX),)
     PREFIX := /usr/local
 endif
 
-install: websockets_client.so libwebsockets/build/lib/libwebsockets.$(NAME_END)
+install: websockets_client.$(NAME_END) libwebsockets/build/lib/libwebsockets.$(NAME_END)
 	install -d $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 websockets_client.$(NAME_END) $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 libwebsockets/build/lib/libwebsockets.$(NAME_END) $(DESTDIR)$(PREFIX)/lib/
