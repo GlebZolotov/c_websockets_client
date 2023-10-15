@@ -77,7 +77,7 @@ static int callback( struct lws *wsi, enum lws_callback_reasons reason, void *us
 		case LWS_CALLBACK_CLOSED:
         case LWS_CALLBACK_CLIENT_CLOSED:
 		case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-            //printf("web_socket closed\n");
+            error_code = reason;
             is_connected = false;
 			break;
 
@@ -147,9 +147,10 @@ connection ws_connect(const char* protocol, const char* host, unsigned int port,
     }
     conn.web_socket = lws_client_connect_via_info(&ccinfo);
 
-    while(!is_connected) {
+    while(!is_connected && (error_code == 0)) {
         lws_service( conn.context, /* timeout_ms = */ 0 );
     }
+    conn.error_code = error_code;
     conn.read_timeout = read_timeout;
 
     return conn;

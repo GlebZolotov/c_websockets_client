@@ -7,6 +7,7 @@ typedef struct connection {
     struct lws_context *context;
     struct lws *web_socket;
     unsigned int read_timeout;
+    int error_code;
 } connection;
 
 typedef struct message {

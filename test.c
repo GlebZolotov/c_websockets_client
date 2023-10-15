@@ -2,6 +2,11 @@
 
 int main() {
     connection conn = ws_connect("wss", "stream.binance.com", 9443, "/stream?streams=adausdt@depth20@100ms/btcusdt@depth20@100ms", true, 60);
+    if (conn.error_code != 0) {
+        printf("Error: %d\n", conn.error_code);
+        ws_close(conn);
+        return 0;
+    }
     int max_len = 0;
     while(conn.web_socket != NULL) {
         message msg = ws_recv(conn);
@@ -11,4 +16,5 @@ int main() {
         printf("%d\n%s\n", max_len, (char*)msg.data);
     }
     ws_close(conn);
+    return 0;
 }
